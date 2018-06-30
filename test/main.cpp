@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "../src/fsm.hpp"
+#include "../src/thompson.hpp"
 
 std::ostream& operator<<(std::ostream& out, const fsm::nfa& nfa)
 {
@@ -90,7 +91,88 @@ void nfa()
     assert(nfa4.transition_table() == nfa4_expected);
 }
 
+void thompson_construction()
+{
+    auto a = thompson::build_literal('a');
+    std::cout << "'a':\n" << a << '\n';
+    const auto a_expected = fsm::transition_table_type{
+        {0,'a'},
+        {0,0},
+    };
+    assert(a.transition_table() == a_expected);
+
+    auto b = thompson::build_literal('b');
+    std::cout << "'b':\n" << b << '\n';
+    const auto b_expected = fsm::transition_table_type{
+        {0,'b'},
+        {0,0},
+    };
+    assert(b.transition_table() == b_expected);
+
+    auto ab = thompson::build_concatenation(a, b);
+    std::cout << "ab:\n" << ab << '\n';
+    const auto ab_expected = fsm::transition_table_type{
+        {0,'a',0},
+        {0,0,'b'},
+        {0,0,0},
+    };
+    assert(ab.transition_table() == ab_expected);
+
+
+    auto a_or_b = thompson::build_alternation(a, b);
+    std::cout << "a|b:\n" << a_or_b << '\n';
+    const auto a_or_b_expected = fsm::transition_table_type{
+        {0,fsm::epsilon,0,fsm::epsilon,0,0},
+        {0,0,'a',0,0,0},
+        {0,0,0,0,0,fsm::epsilon},
+        {0,0,0,0,'b',0},
+        {0,0,0,0,0,fsm::epsilon},
+        {0,0,0,0,0,0},
+    };
+    assert(a_or_b.transition_table() == a_or_b_expected);
+
+    fsm::nfa a_star = thompson::build_kleene_star(a);
+    std::cout << "a*:\n" << a_star << '\n';
+    const auto a_star_expected = fsm::transition_table_type{
+        {0,fsm::epsilon,0,fsm::epsilon},
+        {0,0,'a',0},
+        {0,fsm::epsilon,0,fsm::epsilon},
+        {0,0,0,0},
+    };
+    assert(a_star.transition_table() == a_star_expected);
+
+    auto zero_or_one_a = thompson::build_question_mark(a);
+    std::cout << "a?:\n" << zero_or_one_a << '\n';
+    const auto zero_or_one_a_expected = fsm::transition_table_type{
+        {0,fsm::epsilon,0,fsm::epsilon,0,0},
+        {0,0,'a',0,0,0},
+        {0,0,0,0,0,fsm::epsilon},
+        {0,0,0,0,fsm::epsilon,0},
+        {0,0,0,0,0,fsm::epsilon},
+        {0,0,0,0,0,0},
+    };
+    assert(zero_or_one_a.transition_table() == zero_or_one_a_expected);
+
+    auto a_or_b_star = thompson::build_kleene_star(a_or_b);
+    std::cout << "(a|b)*:\n" << a_or_b_star << '\n';
+    const auto a_or_b_star_expected = fsm::transition_table_type{
+        {0,fsm::epsilon,0,0,0,0,0,fsm::epsilon},
+        {0,0,fsm::epsilon,0,fsm::epsilon,0,0,0},
+        {0,0,0,'a',0,0,0,0},
+        {0,0,0,0,0,0,fsm::epsilon,0},
+        {0,0,0,0,0,'b',0,0},
+        {0,0,0,0,0,0,fsm::epsilon,0},
+        {0,fsm::epsilon,0,0,0,0,0,fsm::epsilon},
+        {0,0,0,0,0,0,0,0},
+    };
+    assert(a_or_b_star.transition_table() == a_or_b_star_expected);
+
+    auto a_or_b_ab = thompson::build_concatenation(a_or_b, thompson::build_concatenation(a, b));
+    std::cout << "(a|b)ab:\n" << a_or_b_ab << '\n';
+}
+
 int main()
 {
     nfa();
+    thompson_construction();
 }

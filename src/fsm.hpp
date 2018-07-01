@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
+#include <cassert>
 
 namespace fsm {
 
@@ -25,6 +26,7 @@ public:
         if(size < 1) {
             throw std::invalid_argument("n must be larger than zero");
         }
+        assert(transition_table_.size() == size);
         for(auto& row : transition_table_) {
             row.resize(size);
         }
@@ -54,9 +56,10 @@ public:
         if(n < 1) {
             throw std::invalid_argument("n must be larger than zero");
         }
-        transition_table_.resize(size() + n);
+        const auto new_size = size() + n;
+        transition_table_.resize(new_size);
         for(auto& row : transition_table_) {
-            row.resize(size());
+            row.resize(new_size);
         }
     }
 
@@ -66,9 +69,10 @@ public:
         if(n < 1) {
             throw std::invalid_argument("n must be larger than zero");
         }
-        transition_table_.resize(size() + n);
+        const auto new_size = size() + n;
+        transition_table_.resize(new_size);
         for(auto& row : transition_table_) {
-            row.resize(size());
+            row.resize(new_size);
             // Shift row elements to the right by n.
             std::copy_backward(row.begin(), row.end() - n, row.end());
             std::fill(row.begin(), row.begin() + n, 0);
@@ -87,6 +91,7 @@ public:
      */
     void prepend(const nfa& other)
     {
+        if(this == &other) { return; }
         prepend_empty_states(other.size());
         for(auto i = 0; i < other.size(); ++i) {
             auto& this_row = transition_table_[i];
@@ -101,6 +106,7 @@ public:
      */
     void append(const nfa& other)
     {
+        if(this == &other) { return; }
         const int orig_size = size();
         append_empty_states(other.size());
         for(auto this_i = orig_size, other_i = 0; this_i < size(); ++this_i, ++other_i) {
@@ -111,18 +117,22 @@ public:
     }
 
     /**
-     * Chains the other NFA such that this NFA's final state is merged with the
-     * other NFA's start state.
+     * Chains the other NFA such that this NFA's final state is merged with
+     * the other NFA's start state.
      */
     void chain(const nfa& other)
     {
+        if(this == &other) { return; }
         const int orig_size = size();
         // Subtract one from the resulting size becaues this NFA's final state
         // is going to be removed.
         append_empty_states(other.size() - 1);
         for(auto this_i = orig_size - 1, other_i = 0; this_i < size(); ++this_i, ++other_i) {
+            assert(this_i < size());
+            assert(other_i < other.size());
             auto& this_row = transition_table_[this_i];
             const auto& other_row = other.transition_table_[other_i];
+            assert(this_row.begin() + orig_size - 1 < this_row.end());
             std::copy(other_row.begin(), other_row.end(), this_row.begin() + orig_size - 1);
         }
     }

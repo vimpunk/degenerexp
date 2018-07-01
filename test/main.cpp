@@ -4,10 +4,11 @@
 
 #include "../src/fsm.hpp"
 #include "../src/thompson.hpp"
+#include "../src/parser.hpp"
 
-std::ostream& operator<<(std::ostream& out, const fsm::nfa& nfa)
+std::ostream& operator<<(std::ostream& out, const std::vector<std::vector<fsm::state>>& table)
 {
-    for(const auto& row : nfa.transition_table()) {
+    for(const auto& row : table) {
         for(const auto& s : row) {
             out << std::setw(2);
             if(s == 0) {
@@ -19,6 +20,11 @@ std::ostream& operator<<(std::ostream& out, const fsm::nfa& nfa)
         out << '\n';
     }
     return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const fsm::nfa& nfa)
+{
+    return out << nfa.transition_table();
 }
 
 void nfa()
@@ -171,8 +177,64 @@ void thompson_construction()
     std::cout << "(a|b)ab:\n" << a_or_b_ab << '\n';
 }
 
+void parse()
+{
+    auto regex1 = "(a|b)*cde";
+    auto nfa1 = parser::shunting_yard_nfa_parser(regex1).parse();
+    const auto expected1_hand_built = fsm::transition_table_type{
+        {0,fsm::epsilon,0,0,0,0,0,fsm::epsilon,0,0,0},
+        {0,0,fsm::epsilon,0,fsm::epsilon,0,0,0,0,0,0},
+        {0,0,0,'a',0,0,0,0,0,0,0},
+        {0,0,0,0,0,0,fsm::epsilon,0,0,0,0},
+        {0,0,0,0,0,'b',0,0,0,0,0},
+        {0,0,0,0,0,0,fsm::epsilon,0,0,0,0},
+        {0,fsm::epsilon,0,0,0,0,0,fsm::epsilon,0,0,0},
+        {0,0,0,0,0,0,0,0,'c',0,0},
+        {0,0,0,0,0,0,0,0,0,'d',0},
+        {0,0,0,0,0,0,0,0,0,0,'e'},
+        {0,0,0,0,0,0,0,0,0,0,0},
+    };
+    const auto expected1 = [] {
+        // Since Thompson construction has been tested before, assemble the
+        // larger NFA peacemeal with Thompson primitives.
+        const auto a = thompson::build_literal('a');
+        const auto b = thompson::build_literal('b');
+        const auto a_or_b = thompson::build_alternation(a, b);
+        const auto a_or_b_star = thompson::build_kleene_star(a_or_b);
+        const auto c = thompson::build_literal('c');
+        const auto d = thompson::build_literal('d');
+        const auto e = thompson::build_literal('e');
+        const auto cd = thompson::build_concatenation(c, d);
+        const auto cde = thompson::build_concatenation(cd, e);
+        const auto a_or_b_star_cde = thompson::build_concatenation(a_or_b_star, cde);
+        return a_or_b_star_cde.transition_table();
+    }();
+    std::cout << "(a|b)*cde:\n" << nfa1 << '\n';
+    assert(expected1_hand_built == expected1);
+    assert(nfa1.transition_table() == expected1);
+
+    auto regex2 = "a(b|c)*|d";
+    auto nfa2 = parser::shunting_yard_nfa_parser(regex2).parse();
+    const auto expected2 = [] {
+        // Since Thompson construction has been tested before, assemble the
+        // larger NFA peacemeal with Thompson primitives.
+        const auto b = thompson::build_literal('b');
+        const auto c = thompson::build_literal('c');
+        const auto b_or_c = thompson::build_alternation(b, c);
+        const auto b_or_c_star = thompson::build_kleene_star(b_or_c);
+        const auto a = thompson::build_literal('a');
+        const auto a_b_or_c_star = thompson::build_concatenation(a, b_or_c_star);
+        const auto d = thompson::build_literal('d');
+        const auto a_and_b_or_c_star_or_d = thompson::build_alternation(a_b_or_c_star, d);
+        return a_and_b_or_c_star_or_d.transition_table();
+    }();
+    std::cout << "a(b|c)*|d:\n" << nfa2 << '\n';
+    assert(nfa2.transition_table() == expected2);
+}
+
 int main()
 {
     nfa();
     thompson_construction();
+    parse();
 }

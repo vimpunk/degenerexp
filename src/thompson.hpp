@@ -27,8 +27,8 @@ inline fsm::nfa build_alternation(const fsm::nfa& a, const fsm::nfa& b)
     alt.append_empty_states(1);
     alt.add_transition(0, 1, fsm::epsilon);
     alt.add_transition(0, 1 + a.size(), fsm::epsilon);
-    alt.add_transition(2, alt.size() - 1, fsm::epsilon);
-    alt.add_transition(4, alt.size() - 1, fsm::epsilon);
+    alt.add_transition(a.size(), alt.size() - 1, fsm::epsilon);
+    alt.add_transition(a.size() + b.size(), alt.size() - 1, fsm::epsilon);
     return alt;
 }
 

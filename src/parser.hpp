@@ -8,46 +8,9 @@
 #include <optional>
 
 #include "fsm.hpp"
-#include "btree.hpp"
 #include "thompson.hpp"
 
 namespace parser {
-
-struct lexeme
-{
-    enum type
-    {
-        literal,
-        concatenation,
-        alternation,
-        question_mark,
-        star,
-    };
-
-    enum type type;
-    char data;
-};
-
-using parse_tree = btree<lexeme>;
-using node = parse_tree::node;
-
-fsm::nfa tree_to_nfa(const node& n)
-{
-    switch(n.data.type) {
-    case lexeme::type::literal:
-        return thompson::build_literal(n.data.data);
-    case lexeme::type::concatenation:
-        return thompson::build_concatenation(tree_to_nfa(*n.left_child),
-                tree_to_nfa(*n.right_child));
-    case lexeme::type::alternation:
-        return thompson::build_alternation(tree_to_nfa(*n.left_child),
-            tree_to_nfa(*n.right_child));
-    case lexeme::type::star:
-        return thompson::build_kleene_star(tree_to_nfa(*n.left_child));
-    default:
-        assert(0);
-    }
-}
 
 enum class op
 {
@@ -96,6 +59,7 @@ public:
                     while(!op_stack_.empty() && op_stack_.top() != op::left_paren) {
                         const auto op = op_stack_.top();
                         op_stack_.pop();
+                        // The rest of the operators are evaluated in place.
                         assert(op == op::alternation);
                         build_alternation();
                     }

@@ -232,6 +232,15 @@ void parse()
     assert(nfa2.transition_table() == expected2);
 }
 
+void eps_closure()
+{
+    const fsm::nfa nfa = parser::shunting_yard_nfa_parser("(a|b)*abb").parse();
+    const auto eps_closure = nfa.epsilon_closure();
+    assert(eps_closure == std::vector<fsm::state>{
+            // TODO
+            });
+}
+
 int main()
 {
     nfa();

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cassert>
+#include <stack>
 
 namespace fsm {
 
@@ -32,10 +33,7 @@ public:
         }
     }
 
-    int size() const noexcept
-    {
-        return transition_table_.size();
-    }
+    int size() const noexcept { return transition_table_.size(); }
 
     const transition_table_type& transition_table() const noexcept
     {
@@ -135,6 +133,47 @@ public:
             assert(this_row.begin() + orig_size - 1 < this_row.end());
             std::copy(other_row.begin(), other_row.end(), this_row.begin() + orig_size - 1);
         }
+    }
+
+    std::vector<state>
+    epsilon_closure(const std::vector<state>& states = std::vector<state>()) const
+    {
+        // algorithm eps-closure 
+        //
+        // inputs: N - NFA, T - set of NFA states 
+        // output: eps-closure(T) - states reachable from T by eps transitions 
+        //
+        // eps-closure(T) = T foreach state t in T 
+        //  push(t, stack) 
+        //  while stack is not empty do 
+        //  	t = pop(stack) 
+        //      foreach state u with an eps edge from t to u 
+        //      	if u is not in eps-closure(T) 
+        //          	add u to eps-closure(T) 
+        //              push(u, stack) 
+        //          end 
+        //  return eps-closure(T) 
+        std::vector<state> eps_closure;
+        auto is_in_eps_closure = [&eps_closure](const state s) {
+            return std::find(eps_closure.begin(), eps_closure.end(), s)
+                != eps_closure.end();
+        };
+        for(int s = 0; s < size() - 1; ++s) {
+            std::stack<state> stack;
+            stack.push(s);
+            while(!stack.empty()) {
+                const auto t = stack.top();
+                stack.pop();
+                for(int u = 0; u < size() - 1; ++u) {
+                    if(u == t) { continue; }
+                    if(transition_table_[t][u] == epsilon && !is_in_eps_closure(u)) {
+                        stack.push(u);
+                        eps_closure.push_back(u);
+                    }
+                }
+            }
+        }
+        return eps_closure;
     }
 
 private:

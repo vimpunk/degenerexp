@@ -136,7 +136,7 @@ public:
     }
 
     std::vector<state>
-    epsilon_closure(const std::vector<state>& states = std::vector<state>()) const
+    epsilon_closure(const std::vector<state>& start_states = std::vector<state>()) const
     {
         // algorithm eps-closure 
         //
@@ -158,15 +158,18 @@ public:
             return std::find(eps_closure.begin(), eps_closure.end(), s)
                 != eps_closure.end();
         };
-        for(int s = 0; s < size() - 1; ++s) {
+        for(auto s : start_states) {
+            if(s < 0 || s >= size()) {
+                throw std::invalid_argument("invalid state");
+            }
             std::stack<state> stack;
             stack.push(s);
             while(!stack.empty()) {
                 const auto t = stack.top();
                 stack.pop();
-                for(int u = 0; u < size() - 1; ++u) {
-                    if(u == t) { continue; }
-                    if(transition_table_[t][u] == epsilon && !is_in_eps_closure(u)) {
+                for(int u = 0; u < size(); ++u) {
+                    if((u == t || transition_table_[t][u] == epsilon)
+                       && !is_in_eps_closure(u)) {
                         stack.push(u);
                         eps_closure.push_back(u);
                     }

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cassert>
+#include <algorithm>
 
 #include "../src/fsm.hpp"
 #include "../src/thompson.hpp"
@@ -234,11 +235,28 @@ void parse()
 
 void eps_closure()
 {
-    const fsm::nfa nfa = parser::shunting_yard_nfa_parser("(a|b)*abb").parse();
-    const auto eps_closure = nfa.epsilon_closure();
-    assert(eps_closure == std::vector<fsm::state>{
-            // TODO
-            });
+    const auto regex = "(a|b)*abb";
+    const fsm::nfa nfa = parser::shunting_yard_nfa_parser(regex).parse();
+
+    auto eps_closure1 = nfa.epsilon_closure({0});
+    std::sort(eps_closure1.begin(), eps_closure1.end());
+    const auto expected1 = std::vector<fsm::state>{0, 1, 2, 4, 7};
+    std::cout << regex << " eps-closure({0}): ";
+    for(auto s : eps_closure1) {
+        std::cout << s << ' ';
+    }
+    std::cout << '\n';
+    assert(eps_closure1 == expected1);
+
+    auto eps_closure2 = nfa.epsilon_closure({8, 9});
+    std::sort(eps_closure1.begin(), eps_closure1.end());
+    const auto expected2 = std::vector<fsm::state>{8, 9};
+    std::cout << regex << " eps-closure({8, 9}): ";
+    for(auto s : eps_closure2) {
+        std::cout << s << ' ';
+    }
+    std::cout << '\n';
+    assert(eps_closure2 == expected2);
 }
 
 int main()
@@ -246,4 +264,5 @@ int main()
     nfa();
     thompson_construction();
     parse();
+    eps_closure();
 }

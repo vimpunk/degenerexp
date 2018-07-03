@@ -135,8 +135,7 @@ public:
         }
     }
 
-    std::vector<state>
-    epsilon_closure(const std::vector<state>& start_states = std::vector<state>()) const
+    std::vector<state> epsilon_closure(const std::vector<state>& start_states) const
     {
         // algorithm eps-closure 
         //

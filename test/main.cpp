@@ -34,7 +34,7 @@ void nfa()
     nfa1.add_transition(0, 1, 1);
     nfa1.add_transition(1, 0, 2);
     std::cout << nfa1 << '\n';
-    const auto nfa1_expected = fsm::transition_table_type{
+    const auto nfa1_expected = fsm::nfa::transition_table_type{
         {0,1},
         {2,0},
     };
@@ -43,7 +43,7 @@ void nfa()
     auto nfa1_2 = nfa1;
     nfa1_2.prepend_empty_states(1);
     std::cout << nfa1_2 << '\n';
-    const auto nfa1_2_expected = fsm::transition_table_type{
+    const auto nfa1_2_expected = fsm::nfa::transition_table_type{
         {0,0,0},
         {0,0,1},
         {0,2,0},
@@ -53,7 +53,7 @@ void nfa()
     auto nfa1_3 = nfa1_2;
     nfa1_3.append_empty_states(2);
     std::cout << nfa1_3 << '\n';
-    const auto nfa1_3_expected = fsm::transition_table_type{
+    const auto nfa1_3_expected = fsm::nfa::transition_table_type{
         {0,0,0,0,0},
         {0,0,1,0,0},
         {0,2,0,0,0},
@@ -67,7 +67,7 @@ void nfa()
     nfa2.add_transition(1, 0, 4);
     nfa2.add_transition(2, 1, 5);
     std::cout << nfa2 << '\n';
-    const auto nfa2_expected = fsm::transition_table_type{
+    const auto nfa2_expected = fsm::nfa::transition_table_type{
         {0,3,0},
         {4,0,0},
         {0,5,0},
@@ -77,7 +77,7 @@ void nfa()
     auto nfa3 = nfa1;
     nfa3.prepend(nfa2);
     std::cout << nfa3 << '\n';
-    const auto nfa3_expected = fsm::transition_table_type{
+    const auto nfa3_expected = fsm::nfa::transition_table_type{
         {0,3,0,0,0},
         {4,0,0,0,0},
         {0,5,0,0,0},
@@ -89,7 +89,7 @@ void nfa()
     auto nfa4 = nfa2;
     nfa4.chain(nfa1);
     std::cout << nfa4 << '\n';
-    const auto nfa4_expected = fsm::transition_table_type{
+    const auto nfa4_expected = fsm::nfa::transition_table_type{
         {0,3,0,0},
         {4,0,0,0},
         {0,5,0,1},
@@ -102,7 +102,7 @@ void thompson_construction()
 {
     auto a = thompson::build_literal('a');
     std::cout << "'a':\n" << a << '\n';
-    const auto a_expected = fsm::transition_table_type{
+    const auto a_expected = fsm::nfa::transition_table_type{
         {0,'a'},
         {0,0},
     };
@@ -110,7 +110,7 @@ void thompson_construction()
 
     auto b = thompson::build_literal('b');
     std::cout << "'b':\n" << b << '\n';
-    const auto b_expected = fsm::transition_table_type{
+    const auto b_expected = fsm::nfa::transition_table_type{
         {0,'b'},
         {0,0},
     };
@@ -118,7 +118,7 @@ void thompson_construction()
 
     auto ab = thompson::build_concatenation(a, b);
     std::cout << "ab:\n" << ab << '\n';
-    const auto ab_expected = fsm::transition_table_type{
+    const auto ab_expected = fsm::nfa::transition_table_type{
         {0,'a',0},
         {0,0,'b'},
         {0,0,0},
@@ -128,7 +128,7 @@ void thompson_construction()
 
     auto a_or_b = thompson::build_alternation(a, b);
     std::cout << "a|b:\n" << a_or_b << '\n';
-    const auto a_or_b_expected = fsm::transition_table_type{
+    const auto a_or_b_expected = fsm::nfa::transition_table_type{
         {0,fsm::epsilon,0,fsm::epsilon,0,0},
         {0,0,'a',0,0,0},
         {0,0,0,0,0,fsm::epsilon},
@@ -140,7 +140,7 @@ void thompson_construction()
 
     fsm::nfa a_star = thompson::build_kleene_star(a);
     std::cout << "a*:\n" << a_star << '\n';
-    const auto a_star_expected = fsm::transition_table_type{
+    const auto a_star_expected = fsm::nfa::transition_table_type{
         {0,fsm::epsilon,0,fsm::epsilon},
         {0,0,'a',0},
         {0,fsm::epsilon,0,fsm::epsilon},
@@ -150,7 +150,7 @@ void thompson_construction()
 
     auto zero_or_one_a = thompson::build_question_mark(a);
     std::cout << "a?:\n" << zero_or_one_a << '\n';
-    const auto zero_or_one_a_expected = fsm::transition_table_type{
+    const auto zero_or_one_a_expected = fsm::nfa::transition_table_type{
         {0,fsm::epsilon,0,fsm::epsilon,0,0},
         {0,0,'a',0,0,0},
         {0,0,0,0,0,fsm::epsilon},
@@ -162,7 +162,7 @@ void thompson_construction()
 
     auto a_or_b_star = thompson::build_kleene_star(a_or_b);
     std::cout << "(a|b)*:\n" << a_or_b_star << '\n';
-    const auto a_or_b_star_expected = fsm::transition_table_type{
+    const auto a_or_b_star_expected = fsm::nfa::transition_table_type{
         {0,fsm::epsilon,0,0,0,0,0,fsm::epsilon},
         {0,0,fsm::epsilon,0,fsm::epsilon,0,0,0},
         {0,0,0,'a',0,0,0,0},
@@ -182,7 +182,7 @@ void parse()
 {
     auto regex1 = "(a|b)*cde";
     auto nfa1 = parser::shunting_yard_nfa_parser(regex1).parse();
-    const auto expected1_hand_built = fsm::transition_table_type{
+    const auto expected1_hand_built = fsm::nfa::transition_table_type{
         {0,fsm::epsilon,0,0,0,0,0,fsm::epsilon,0,0,0},
         {0,0,fsm::epsilon,0,fsm::epsilon,0,0,0,0,0,0},
         {0,0,0,'a',0,0,0,0,0,0,0},
@@ -238,9 +238,8 @@ void eps_closure()
     const auto regex = "(a|b)*abb";
     const fsm::nfa nfa = parser::shunting_yard_nfa_parser(regex).parse();
 
-    auto eps_closure1 = nfa.epsilon_closure({0});
-    std::sort(eps_closure1.begin(), eps_closure1.end());
-    const auto expected1 = std::vector<fsm::state>{0, 1, 2, 4, 7};
+    const auto eps_closure1 = nfa.epsilon_closure({0});
+    const auto expected1 = std::set<fsm::state>{0, 1, 2, 4, 7};
     std::cout << regex << " eps-closure({0}): ";
     for(auto s : eps_closure1) {
         std::cout << s << ' ';
@@ -248,9 +247,8 @@ void eps_closure()
     std::cout << '\n';
     assert(eps_closure1 == expected1);
 
-    auto eps_closure2 = nfa.epsilon_closure({8, 9});
-    std::sort(eps_closure1.begin(), eps_closure1.end());
-    const auto expected2 = std::vector<fsm::state>{8, 9};
+    const auto eps_closure2 = nfa.epsilon_closure({8, 9});
+    const auto expected2 = std::set<fsm::state>{8, 9};
     std::cout << regex << " eps-closure({8, 9}): ";
     for(auto s : eps_closure2) {
         std::cout << s << ' ';
@@ -259,10 +257,24 @@ void eps_closure()
     assert(eps_closure2 == expected2);
 }
 
+void dfa()
+{
+    fsm::nfa nfa(5);
+    nfa.add_transition(0, 1, fsm::epsilon);
+    nfa.add_transition(0, 2, 'a');
+    nfa.add_transition(1, 3, 'a');
+    nfa.add_transition(1, 4, 'a');
+    nfa.add_transition(2, 3, 'b');
+    nfa.add_transition(3, 4, 'b');
+
+    std::cout << fsm::dfa(nfa, {'a', 'b'}) << '\n';
+}
+
 int main()
 {
     nfa();
     thompson_construction();
     parse();
     eps_closure();
+    dfa();
 }

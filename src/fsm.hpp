@@ -10,12 +10,10 @@
 #include <set>
 #include <map>
 
-#include <ostream>
-
 namespace fsm {
 
-using state = int;
-using input = int;
+using state_t = int;
+using input_t = int;
 enum {
     epsilon = -1,
 };
@@ -24,21 +22,21 @@ enum class result {
     accept, reject
 };
 
-inline std::set<input> input_language(std::string_view regex)
+inline std::set<input_t> derive_input_language(std::string_view regex)
 {
     return {regex.begin(), regex.end()};
 }
 
 struct nfa
 {
-    using transition_table_type = std::vector<std::vector<input>>;
+    using transition_table_type = std::vector<std::vector<input_t>>;
 
 private:
     transition_table_type transition_table_;
-    std::set<input> input_language_;
+    std::set<input_t> input_language_;
 
 public:
-    explicit nfa(const int size, std::set<input> input_language = {})
+    explicit nfa(const int size, std::set<input_t> input_language = {})
         : transition_table_(size)
         , input_language_(std::move(input_language))
     {
@@ -53,15 +51,15 @@ public:
 
     int size() const noexcept { return transition_table_.size(); }
 
-    state start_state() const noexcept { return transition_table_[0][0]; }
-    state final_state() const noexcept { return transition_table_.back().back(); }
+    state_t start_state() const noexcept { return 0; }
+    state_t final_state() const noexcept { return transition_table_.size() - 1; }
 
     const transition_table_type& transition_table() const noexcept
     {
         return transition_table_;
     }
 
-    void add_transition(const state from, const state to, const input input)
+    void add_transition(const state_t from, const state_t to, const input_t input)
     {
         if(!is_legal_state(from) || !is_legal_state(to)) {
             throw std::invalid_argument("invalid state");
@@ -156,8 +154,8 @@ public:
         }
     }
 
-    template<typename States = std::initializer_list<state>>
-    std::set<state> epsilon_closure(const States& start_states) const
+    template<typename States = std::initializer_list<state_t>>
+    std::set<state_t> epsilon_closure(const States& start_states) const
     {
         // algorithm eps-closure 
         //
@@ -174,8 +172,8 @@ public:
         //              push(u, stack) 
         //          end 
         //  return eps-closure(T) 
-        std::set<state> eps_closure;
-        auto is_in_eps_closure = [&eps_closure](const state s) {
+        std::set<state_t> eps_closure;
+        auto is_in_eps_closure = [&eps_closure](const state_t s) {
             return std::find(eps_closure.begin(), eps_closure.end(), s)
                 != eps_closure.end();
         };
@@ -183,7 +181,7 @@ public:
             if(!is_legal_state(s)) {
                 throw std::invalid_argument("invalid state");
             }
-            std::stack<state> stack;
+            std::stack<state_t> stack;
             stack.push(s);
             while(!stack.empty()) {
                 const auto t = stack.top();
@@ -205,33 +203,20 @@ public:
      * a single transition on this input (thus not considering intermediate
      * epsilon transitions).
      */
-    std::set<state> reachable_states(const state start, const input input) const
+    std::set<state_t> reachable_states(const state_t start, const input_t input) const
     {
-        if(!is_legal_state(start)) {
-            throw std::invalid_argument("invalid start state");
-        }
-        std::set<state> result;
-        for(state s = 0; s < size(); ++s) {
-            if(s == start) {
-                continue;
-            }
-            const auto i = transition_table_[start][s];
-            if(i == input) {
-                result.insert(s);
-            }
-        }
-        return result;
+        return reachable_states({start}, input);
     }
 
-    template<typename States = std::initializer_list<state>>
-    std::set<state> reachable_states(const States& start_states, const input input) const
+    template<typename States = std::initializer_list<state_t>>
+    std::set<state_t> reachable_states(const States& start_states, const input_t input) const
     {
-        std::set<state> result;
+        std::set<state_t> result;
         for(const auto start : start_states) {
             if(!is_legal_state(start)) {
                 throw std::invalid_argument("invalid start state");
             }
-            for(state s = 0; s < size(); ++s) {
+            for(state_t s = 0; s < size(); ++s) {
                 if(s == start) {
                     continue;
                 }
@@ -243,8 +228,9 @@ public:
         }
         return result;
     }
+
 private:
-    bool is_legal_state(const state s) const noexcept
+    bool is_legal_state(const state_t s) const noexcept
     {
         return s >= 0 && s < transition_table_.size();
     }
@@ -253,17 +239,20 @@ private:
 struct dfa
 {
     using transition_table_type =
-        std::map<std::set<state>, std::map<input, std::set<state>>>;
+        std::map<std::set<state_t>, std::map<input_t, std::set<state_t>>>;
 
 private:
     transition_table_type state_map_;
-    transition_table_type::iterator start_;
+    transition_table_type::const_iterator start_;
+    state_t final_state_;
 
 public:
     /** Constructs a DFA from an NFA and an input language via subset construction. */
-    dfa(const nfa& nfa, const std::set<input>& input_lang) : start_(state_map_.end())
+    dfa(const nfa& nfa, const std::set<input_t>& input_lang)
+        : start_(state_map_.end())
+        , final_state_(nfa.final_state())
     {
-        std::stack<std::set<state>> state_stack;
+        std::stack<std::set<state_t>> state_stack;
         state_stack.push(nfa.epsilon_closure({nfa.start_state()}));
 
         while(!state_stack.empty()) {
@@ -288,41 +277,35 @@ public:
                 }
             }
         }
+
+        assert(state_map_.find({final_state_}) == state_map_.end());
+        state_map_[{final_state_}] = {};
     }
 
-    void add_transition(std::set<state> from, const state to, const input input) {
+    transition_table_type transition_table() const { return state_map_; }
 
-    }
+    result simulate(std::string_view input) const
+    {
+        auto it = start_;
+        for(auto c : input) {
+            if(it == state_map_.end()) { return result::reject; }
+            const auto& [_, transitions] = *it;
+            const auto& transition = transitions.find(c);
+            //const auto transition = std::find_if(transitions.begin(), transitions.end(),
+                    //[c](const auto& t) { return t.input == c; });
+            if(transition == transitions.end()) { return result::reject; }
+            it = state_map_.find(transition->second);
+        }
 
-    friend std::ostream& operator<<(std::ostream& out, const dfa& dfa);
-};
-
-std::ostream& operator<<(std::ostream& out, const dfa& dfa) {
-    const auto print_states = [&out](const auto& states) {
-        out << "[";
-        for(auto it = states.begin(); it != states.end();) {
-            out << *it;
-            ++it;
-            if(it != states.end()) {
-                out << " ";
+        if(it != state_map_.end()) {
+            const auto& [states, _] = *it;
+            if(states.find(final_state_) != states.end()) {
+                return result::accept;
             }
         }
-        out << "]";
-    };
-    out << "{\n";
-    for(const auto& [states, transitions] : dfa.state_map_) {
-        out << "\t";
-        print_states(states);
-        out << ": {";
-        for(const auto& [input, states]: transitions) {
-            out << input << ": ";
-            print_states(states);
-        }
-        out << "}\n";
+        return result::reject;
     }
-    out << "}";
-    return out;
-}
+};
 
 } // fsm
 

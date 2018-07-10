@@ -7,7 +7,7 @@
 #include "../src/thompson.hpp"
 #include "../src/parser.hpp"
 
-std::ostream& operator<<(std::ostream& out, const std::vector<std::vector<fsm::state>>& table)
+std::ostream& operator<<(std::ostream& out, const std::vector<std::vector<fsm::state_t>>& table)
 {
     for(const auto& row : table) {
         for(const auto& s : row) {
@@ -26,6 +26,33 @@ std::ostream& operator<<(std::ostream& out, const std::vector<std::vector<fsm::s
 std::ostream& operator<<(std::ostream& out, const fsm::nfa& nfa)
 {
     return out << nfa.transition_table();
+}
+
+std::ostream& operator<<(std::ostream& out, const fsm::dfa& dfa) {
+    const auto print_states = [&out](const auto& states) {
+        out << "[";
+        for(auto it = states.begin(); it != states.end();) {
+            out << *it;
+            ++it;
+            if(it != states.end()) {
+                out << " ";
+            }
+        }
+        out << "]";
+    };
+    out << "{\n";
+    for(const auto& [states, transitions] : dfa.transition_table()) {
+        out << "\t";
+        print_states(states);
+        out << ": {";
+        for(const auto& [input, states] : transitions) {
+            out << input << ": ";
+            print_states(states);
+        }
+        out << "}\n";
+    }
+    out << "}";
+    return out;
 }
 
 void nfa()
@@ -239,7 +266,7 @@ void eps_closure()
     const fsm::nfa nfa = parser::shunting_yard_nfa_parser(regex).parse();
 
     const auto eps_closure1 = nfa.epsilon_closure({0});
-    const auto expected1 = std::set<fsm::state>{0, 1, 2, 4, 7};
+    const auto expected1 = std::set<fsm::state_t>{0, 1, 2, 4, 7};
     std::cout << regex << " eps-closure({0}): ";
     for(auto s : eps_closure1) {
         std::cout << s << ' ';
@@ -248,7 +275,7 @@ void eps_closure()
     assert(eps_closure1 == expected1);
 
     const auto eps_closure2 = nfa.epsilon_closure({8, 9});
-    const auto expected2 = std::set<fsm::state>{8, 9};
+    const auto expected2 = std::set<fsm::state_t>{8, 9};
     std::cout << regex << " eps-closure({8, 9}): ";
     for(auto s : eps_closure2) {
         std::cout << s << ' ';
@@ -267,7 +294,11 @@ void dfa()
     nfa.add_transition(2, 3, 'b');
     nfa.add_transition(3, 4, 'b');
 
-    std::cout << fsm::dfa(nfa, {'a', 'b'}) << '\n';
+    std::cout << "nfa start: " << nfa.start_state() << "; nfa final: " << nfa.final_state() << '\n';
+
+    fsm::dfa dfa = fsm::dfa(nfa, {'a', 'b'});
+    std::cout << dfa << '\n';
+    assert(dfa.simulate("abb") == fsm::result::accept);
 }
 
 int main()

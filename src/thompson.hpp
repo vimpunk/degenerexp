@@ -5,7 +5,7 @@
 
 namespace thompson {
 
-inline fsm::nfa build_literal(const fsm::input input)
+inline fsm::nfa build_literal(const fsm::input_t input)
 {
     fsm::nfa literal(2);
     literal.add_transition(0, 1, input);

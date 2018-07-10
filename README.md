@@ -18,7 +18,7 @@ expression engines' syntax, which is the following:
 - `?` matches the preceding item at most once;
 - `*` matches the preceding item zero or more times;
 - `+` matches the previous item one or more times;
-- `|` two regular expressions may be joined by this infix operator and the resulting regular expression matches any string matching either sides of the expression; 
+- `|` two regular expressions may be joined by this infix operator and the resulting regular expression matches any string matching one of the expressions; 
 - `()` parentheses may be used to deliniate regular expressions into a single item for the preceding operators to act on
 
 E.g.: `(ab|c)*de?` is a valid regular expression that even degenerexp can handle ~~given enough support and love~~.

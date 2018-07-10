@@ -4,7 +4,7 @@ So this is a pretty lousy regex engine and the only thing special about it is th
 parents used to say about me, but I digress).
 
 It has not been optimized at all, for the project's sole purpose was, from the outset, to attain
-*enlightenment*--which, I am delighted to report, was achieved. This means I will no longer spend any time on github
+*enlightenment*--which, I am delighted to report, was achieved. This means I will no longer spend any time on github (and no, not because of Microsoft)
 for I shall be sitting on top of a distant mountain reveling in the sheer overwhelming beauty of life. And all it took to arrive
 at this state was to write a shoddy regular expression engine!
 

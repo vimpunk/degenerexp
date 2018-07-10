@@ -299,6 +299,7 @@ void dfa()
     fsm::dfa dfa = fsm::dfa(nfa, {'a', 'b'});
     std::cout << dfa << '\n';
     assert(dfa.simulate("abb") == fsm::result::accept);
+    assert(dfa.simulate("aab") == fsm::result::reject);
 }
 
 int main()

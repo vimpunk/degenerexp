@@ -1,5 +1,5 @@
-#ifndef NFA_HEADER
-#define NFA_HEADER
+#ifndef FSM_HEADER
+#define FSM_HEADER
 
 #include <vector>
 #include <algorithm>
@@ -282,23 +282,27 @@ public:
         state_map_[{final_state_}] = {};
     }
 
-    transition_table_type transition_table() const { return state_map_; }
+    const transition_table_type& transition_table() const { return state_map_; }
 
+    /**
+     * Simulates the DFA given an input string. If simulation ends in
+     * a matched/final state, the return value is result::accept, but if the
+     * simulation cannot reach a matched state with this input, the return value
+     * is result::reject.
+     */
     result simulate(std::string_view input) const
     {
-        auto it = start_;
+        auto state = start_;
         for(auto c : input) {
-            if(it == state_map_.end()) { return result::reject; }
-            const auto& [_, transitions] = *it;
+            if(state == state_map_.end()) { return result::reject; }
+            const auto& [_, transitions] = *state;
             const auto& transition = transitions.find(c);
-            //const auto transition = std::find_if(transitions.begin(), transitions.end(),
-                    //[c](const auto& t) { return t.input == c; });
             if(transition == transitions.end()) { return result::reject; }
-            it = state_map_.find(transition->second);
+            state = state_map_.find(transition->second);
         }
 
-        if(it != state_map_.end()) {
-            const auto& [states, _] = *it;
+        if(state != state_map_.end()) {
+            const auto& [states, _] = *state;
             if(states.find(final_state_) != states.end()) {
                 return result::accept;
             }

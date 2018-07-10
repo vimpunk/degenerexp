@@ -21,7 +21,7 @@ expression engines' syntax, which is the following:
 - `|` two regular expressions may be joined by this infix operator and the resulting regular expression matches any string matching one of the expressions; 
 - `()` parentheses may be used to deliniate regular expressions into a single item for the preceding operators to act on
 
-E.g.: `(ab|c)*de?` is a valid regular expression that even degenerexp can handle ~~given enough support and love~~.
+E.g.: `(ab|c)*de?` is a valid regular expression that even degenerexp can handle ~~given enough emotional support~~.
 
 ## How it works
 

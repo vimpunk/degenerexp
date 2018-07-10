@@ -34,7 +34,7 @@ const auto input = "abababde";
 const auto regex = "(ab|c)*de";
 fsm::nfa nfa = parser::shunting_yard_nfa_parser(regex).parse();
 fsm::dfa dfa(nfa, fsm::derive_input_language(regex));
-if(dfa.simulate(input_str) == fsm::result::accept) {
+if(dfa.simulate(input) == fsm::result::accept) {
     std::cout << input << " matches the regex\'"" << regex << "'!\n";
 }
 ```

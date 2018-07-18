@@ -175,6 +175,8 @@ void thompson_construction()
     };
     assert(a_star.transition_table() == a_star_expected);
 
+    // TODO test plus sign
+
     auto zero_or_one_a = thompson::build_question_mark(a);
     std::cout << "a?:\n" << zero_or_one_a << '\n';
     const auto zero_or_one_a_expected = fsm::nfa::transition_table_type{

@@ -49,6 +49,11 @@ inline fsm::nfa build_question_mark(const fsm::nfa& nfa)
     return build_alternation(nfa, build_literal(fsm::epsilon));
 }
 
+inline fsm::nfa build_plus_sign(const fsm::nfa& nfa)
+{
+    return build_concatenation(nfa, build_kleene_star(nfa));
+}
+
 } // thompson
 
 #endif

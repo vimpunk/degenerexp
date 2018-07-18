@@ -166,7 +166,7 @@ private:
         if(output_.empty()) {
             throw std::runtime_error("+ operator must have an argument");
         }
-        assert(0 && "not implemented");
+        output_.back() = thompson::build_plus_sign(output_.back());
     }
 };
 

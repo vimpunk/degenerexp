@@ -242,47 +242,48 @@ struct dfa
         std::map<std::set<state_t>, std::map<input_t, std::set<state_t>>>;
 
 private:
-    transition_table_type state_map_;
+    transition_table_type transition_table_;
     transition_table_type::const_iterator start_;
     state_t final_state_;
 
 public:
     /** Constructs a DFA from an NFA and an input language via subset construction. */
     dfa(const nfa& nfa, const std::set<input_t>& input_lang)
-        : start_(state_map_.end())
+        : start_(transition_table_.end())
         , final_state_(nfa.final_state())
     {
-        std::stack<std::set<state_t>> state_stack;
-        state_stack.push(nfa.epsilon_closure({nfa.start_state()}));
+        std::stack<std::set<state_t>> to_process;
+        to_process.push(nfa.epsilon_closure({nfa.start_state()}));
 
-        while(!state_stack.empty()) {
-            auto start_states = std::move(state_stack.top());
-            state_stack.pop();
+        while(!to_process.empty()) {
+            auto start_states = std::move(to_process.top());
+            to_process.pop();
             for(const auto input : input_lang) {
                 // Compute all reachable states given `input`.
-                const auto reachable = nfa.reachable_states(start_states, input);
+                auto reachable = nfa.reachable_states(start_states, input);
                 if(!reachable.empty()) {
                     // Compute the epsilon closure of `reachable` so that
                     // epsilon transitions are considered as well (the result
                     // includes the original `reachable` set).
-                    const auto all_reachable = nfa.epsilon_closure(reachable);
+                    reachable = nfa.epsilon_closure(reachable);
 
                     // Connect the two states in the transition table.
-                    auto& transitions = state_map_[start_states];
-                    transitions[input] = all_reachable;
-                    state_stack.push(std::move(all_reachable));
-                    if(start_ == state_map_.end()) {
-                        start_ = state_map_.begin();
+                    auto& transitions = transition_table_[start_states];
+                    transitions[input] = reachable;
+
+                    to_process.push(std::move(reachable));
+                    if(start_ == transition_table_.end()) {
+                        start_ = transition_table_.begin();
                     }
                 }
             }
         }
 
-        assert(state_map_.find({final_state_}) == state_map_.end());
-        state_map_[{final_state_}] = {};
+        assert(transition_table_.find({final_state_}) == transition_table_.end());
+        transition_table_[{final_state_}] = {};
     }
 
-    const transition_table_type& transition_table() const { return state_map_; }
+    const transition_table_type& transition_table() const { return transition_table_; }
 
     /**
      * Simulates the DFA given an input string. If simulation ends in
@@ -294,14 +295,14 @@ public:
     {
         auto state = start_;
         for(auto c : input) {
-            if(state == state_map_.end()) { return result::reject; }
+            if(state == transition_table_.end()) { return result::reject; }
             const auto& [_, transitions] = *state;
             const auto& transition = transitions.find(c);
             if(transition == transitions.end()) { return result::reject; }
-            state = state_map_.find(transition->second);
+            state = transition_table_.find(transition->second);
         }
 
-        if(state != state_map_.end()) {
+        if(state != transition_table_.end()) {
             const auto& [states, _] = *state;
             if(states.find(final_state_) != states.end()) {
                 return result::accept;

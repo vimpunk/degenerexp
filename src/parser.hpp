@@ -45,80 +45,81 @@ public:
     
     fsm::nfa parse()
     {
+        // The regex has already been parsed, don't repeat the process.
         if(output_.size() == 1) {
             return output_.back();
-        } else {
-            for(const auto c : regex_) {
-                switch(c) {
-                case '(':
-                    op_stack_.push(op::left_paren);
-                    is_prev_separator_ = true;
-                    ++nesting_level_;
-                    break;
-                case ')':
-                    while(!op_stack_.empty() && op_stack_.top() != op::left_paren) {
-                        const auto op = op_stack_.top();
-                        op_stack_.pop();
-                        // The rest of the operators are evaluated in place.
-                        assert(op == op::alternation);
-                        build_alternation();
-                    }
-                    // Remove left paren.
+        }
+
+        for(const auto c : regex_) {
+            switch(c) {
+            case '(':
+                op_stack_.push(op::left_paren);
+                is_prev_separator_ = true;
+                ++nesting_level_;
+                break;
+            case ')':
+                while(!op_stack_.empty() && op_stack_.top() != op::left_paren) {
+                    const auto op = op_stack_.top();
                     op_stack_.pop();
-                    is_prev_separator_ = true;
-                    --nesting_level_;
-                    break;
-                case '*':
-                    build_kleene_star();
+                    // The rest of the operators are evaluated in place.
+                    assert(op == op::alternation);
+                    build_alternation();
+                }
+                // Remove left paren.
+                op_stack_.pop();
+                is_prev_separator_ = true;
+                --nesting_level_;
+                break;
+            case '*':
+                build_kleene_star();
+                is_prev_separator_ = false;
+                // Since a multi (*,?,+) cannot follow another multi, this is the
+                // right opportunity to concatenate the separate NFAs in the output
+                // queue.
+                concatenate_output();
+                break;
+            case '?':
+                build_question_mark();
+                is_prev_separator_ = false;
+                // See comment in op::*.
+                concatenate_output();
+                break;
+            case '+':
+                build_plus_sign();
+                is_prev_separator_ = false;
+                // See comment in op::*.
+                concatenate_output();
+                break;
+            case '|':
+                op_stack_.push(op::alternation);
+                is_prev_separator_ = true;
+                break;
+            default:
+                auto literal = thompson::build_literal(c);
+                if(is_prev_separator_) {
+                    output_.emplace_back(std::move(literal));
                     is_prev_separator_ = false;
-                    // Since a multi (*,?,+) cannot follow another multi, this is the
-                    // right opportunity to concatenate the separate NFAs in the output
-                    // queue.
-                    concatenate_output();
-                    break;
-                case '?':
-                    build_question_mark();
-                    is_prev_separator_ = false;
-                    // See comment in op::*.
-                    concatenate_output();
-                    break;
-                case '+':
-                    build_plus_sign();
-                    is_prev_separator_ = false;
-                    // See comment in op::*.
-                    concatenate_output();
-                    break;
-                case '|':
-                    op_stack_.push(op::alternation);
-                    is_prev_separator_ = true;
-                    break;
-                default:
-                    auto literal = thompson::build_literal(c);
-                    if(is_prev_separator_) {
-                        output_.emplace_back(std::move(literal));
-                        is_prev_separator_ = false;
+                } else {
+                    if(output_.empty()) {
+                        output_.emplace_back(literal);
                     } else {
-                        if(output_.empty()) {
-                            output_.emplace_back(literal);
-                        } else {
-                            output_.back() = thompson::build_concatenation(output_.back(), literal);
-                        }
+                        output_.back() = thompson::build_concatenation(output_.back(), literal);
                     }
                 }
             }
-
-            // Evaluate the remaining operators which at this point are only
-            // binary operations (alternations).
-            while(!op_stack_.empty()) {
-                auto op = op_stack_.top();
-                op_stack_.pop();
-                assert(op == op::alternation);
-                build_alternation();
-            }
-
-            assert(output_.size() == 1);
-            return output_.front();
         }
+
+        // Evaluate the remaining operators which at this point are only
+        // binary operations (alternations).
+        while(!op_stack_.empty()) {
+            auto op = op_stack_.top();
+            op_stack_.pop();
+            assert(op == op::alternation);
+            build_alternation();
+        }
+
+        assert(output_.size() == 1);
+        return output_.front();
     }
 
 private:

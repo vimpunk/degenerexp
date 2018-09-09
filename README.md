@@ -33,7 +33,7 @@ NFA into a deterministic finite automaton (DFA). Finally, input strings are matc
 const auto input = "abababde";
 const auto regex = "(ab|c)*de";
 fsm::nfa nfa = parser::shunting_yard_nfa_parser(regex).parse();
-fsm::dfa dfa(nfa, fsm::derive_input_language(regex));
+fsm::dfa dfa(nfa, fsm::derive_input_language(input));
 if(dfa.simulate(input) == fsm::result::accept) {
     std::cout << input << " matches the regex '" << regex << "'!\n";
 }

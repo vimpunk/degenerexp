@@ -22,9 +22,9 @@ enum class result {
     accept, reject
 };
 
-inline std::set<input_t> derive_input_language(std::string_view regex)
+inline std::set<input_t> derive_input_language(std::string_view s)
 {
-    return {regex.begin(), regex.end()};
+    return {s.begin(), s.end()};
 }
 
 struct nfa
